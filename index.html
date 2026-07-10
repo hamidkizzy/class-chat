@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Class Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="ambient">
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="blob blob-c"></div>
+  </div>
+
+  <!-- Loading -->
+  <div id="screenLoading" class="center-screen">
+    <div class="center-card glass">
+      <div class="spinner"></div>
+      <p>Connecting…</p>
+    </div>
+  </div>
+
+  <!-- No class code in the link -->
+  <div id="screenNoCode" class="center-screen hidden">
+    <div class="center-card glass">
+      <div class="icon">🔗</div>
+      <h2>Missing class link</h2>
+      <p>This link doesn't point to a specific class. Ask your admin for the correct link or QR code.</p>
+    </div>
+  </div>
+
+  <!-- Class not found -->
+  <div id="screenClassNotFound" class="center-screen hidden">
+    <div class="center-card glass">
+      <div class="icon">❓</div>
+      <h2>Class not found</h2>
+      <p>That class code doesn't match anything. Double check the link with your admin.</p>
+    </div>
+  </div>
+
+  <!-- Join form -->
+  <div id="screenJoinForm" class="center-screen hidden">
+    <div class="center-card glass">
+      <div class="icon">👋</div>
+      <h2>Joining <span id="joinClassName" class="class-name"></span></h2>
+      <p>Enter your name and email so the class admin can verify who's joining. Your name and email are never shown to other students — only to the admin.</p>
+      <div class="field">
+        <label for="joinName">Your name</label>
+        <input type="text" id="joinName" placeholder="e.g. Alex Johnson" autocomplete="name" />
+      </div>
+      <div class="field">
+        <label for="joinEmail">Your email</label>
+        <input type="email" id="joinEmail" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <button id="joinSubmitBtn" class="btn-primary">Request to join</button>
+      <div id="joinError" class="error-text"></div>
+    </div>
+  </div>
+
+  <!-- Waiting for approval -->
+  <div id="screenWaiting" class="center-screen hidden">
+    <div class="center-card glass">
+      <div class="icon">⏳</div>
+      <h2>Waiting for approval</h2>
+      <p>Your request to join <span id="waitingClassName" class="class-name"></span> is pending. This page will update automatically once the admin approves you — no need to refresh.</p>
+    </div>
+  </div>
+
+  <!-- Rejected -->
+  <div id="screenRejected" class="center-screen hidden">
+    <div class="center-card glass">
+      <div class="icon">🚫</div>
+      <h2>Request not approved</h2>
+      <p>The admin didn't approve your request to join this class. If you think this is a mistake, reach out to them directly.</p>
+    </div>
+  </div>
+
+  <!-- Main chat app -->
+  <div id="chatApp" class="app hidden">
+
+    <header class="topbar glass">
+      <div class="topbar-left">
+        <span class="logo-dot"></span>
+        <div class="topbar-titles">
+          <h1 id="chatClassName">Class Chat</h1>
+          <p class="subtitle">Anonymous to classmates · verified by admin</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span id="onlineCount" class="online-pill hidden">1 online</span>
+        <span id="statusDot" class="status-dot connecting"></span>
+        <span id="statusText" class="status-text">connecting…</span>
+      </div>
+    </header>
+
+    <main id="messages" class="messages">
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">💬</div>
+        <p>No messages yet.</p>
+        <p class="empty-sub">Be the first to say something to the class.</p>
+      </div>
+    </main>
+
+    <button id="jumpToLatest" class="jump-btn glass hidden">↓ New messages</button>
+
+    <footer class="composer glass">
+      <div class="composer-inner">
+        <textarea
+          id="messageInput"
+          placeholder="Message the class anonymously…"
+          maxlength="500"
+          rows="1"
+        ></textarea>
+        <div class="composer-meta">
+          <span id="charCount" class="char-count">0/500</span>
+          <button id="sendBtn" class="send-btn" aria-label="Send message">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 12L20 4L14 20L11 13L4 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
