@@ -347,6 +347,8 @@ function subscribeRealtime() {
       { event: "INSERT", schema: "public", table: "messages", filter: `class_id=eq.${currentClass.id}` },
       (payload) => {
         const msg = payload.new;
+        if (rowsById.has(msg.id)) return;
+
         const wasNearBottom = isNearBottom;
         renderMessage(msg);
 
@@ -381,11 +383,15 @@ async function sendMessage() {
 
   sendBtn.disabled = true;
 
-  const { error } = await sb.from("messages").insert({
-    class_id: currentClass.id,
-    user_id: session.user.id,
-    content,
-  });
+  const { data, error } = await sb
+    .from("messages")
+    .insert({
+      class_id: currentClass.id,
+      user_id: session.user.id,
+      content,
+    })
+    .select()
+    .single();
 
   if (error) {
     console.error("Send failed:", error);
@@ -399,6 +405,13 @@ async function sendMessage() {
   updateCharCount();
   sendBtn.disabled = false;
   inputEl.focus();
+
+  // Show it immediately — don't wait on the realtime broadcast for our own message
+  if (data && !rowsById.has(data.id)) {
+    const wasNearBottom = isNearBottom;
+    renderMessage(data);
+    if (wasNearBottom) scrollToBottom(true);
+  }
 }
 
 function autoResize() {
