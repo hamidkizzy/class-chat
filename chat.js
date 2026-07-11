@@ -340,12 +340,14 @@ function setStatus(state, label) {
 
 function subscribeRealtime() {
   setStatus("connecting", "connecting…");
+  console.log("[debug] subscribing to realtime for class", currentClass.id);
 
   sb.channel(`class-messages:${currentClass.id}`)
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "messages", filter: `class_id=eq.${currentClass.id}` },
       (payload) => {
+        console.log("[debug] INSERT event received:", payload);
         const msg = payload.new;
         if (rowsById.has(msg.id)) return;
 
@@ -371,6 +373,7 @@ function subscribeRealtime() {
       (payload) => removeMessageRow(payload.old.id)
     )
     .subscribe((status) => {
+      console.log("[debug] realtime status:", status);
       if (status === "SUBSCRIBED") setStatus("connected", "live");
       else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setStatus("error", "connection issue");
       else if (status === "CLOSED") setStatus("connecting", "reconnecting…");
@@ -399,6 +402,8 @@ async function sendMessage() {
     sendBtn.disabled = false;
     return;
   }
+
+  console.log("[debug] message inserted successfully:", data);
 
   inputEl.value = "";
   autoResize();
