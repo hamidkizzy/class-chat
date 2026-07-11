@@ -292,6 +292,11 @@ body.scrollable {
   border-radius: 999px;
 }
 
+.notif-btn {
+  font-size: 11px;
+  padding: 5px 10px;
+}
+
 /* ===== Messages area ===== */
 .messages {
   flex: 1;

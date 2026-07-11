@@ -222,10 +222,30 @@ function listenForApprovalChange() {
 function enterChat() {
   chatClassNameEl.textContent = currentClass.name;
   showScreen("chat");
+  setupNotifButton();
   loadHistory().then(() => {
     subscribeRealtime();
     subscribePresence();
     startPolling();
+  });
+}
+
+function setupNotifButton() {
+  const btn = document.getElementById("enableNotifsBtn");
+  const alreadyEnabled =
+    audioCtx && (!("Notification" in window) || Notification.permission !== "default");
+
+  if (alreadyEnabled) {
+    btn.classList.add("hidden");
+    return;
+  }
+
+  btn.classList.remove("hidden");
+  btn.addEventListener("click", () => {
+    unlockAudio();
+    playPing();
+    btn.textContent = "🔔 Sound on";
+    setTimeout(() => btn.classList.add("hidden"), 1200);
   });
 }
 
