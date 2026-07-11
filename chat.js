@@ -345,10 +345,11 @@ function subscribeRealtime() {
   sb.channel(`class-messages:${currentClass.id}`)
     .on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "messages", filter: `class_id=eq.${currentClass.id}` },
+      { event: "INSERT", schema: "public", table: "messages" },
       (payload) => {
         console.log("[debug] INSERT event received:", payload);
         const msg = payload.new;
+        if (msg.class_id !== currentClass.id) return;
         if (rowsById.has(msg.id)) return;
 
         const wasNearBottom = isNearBottom;
@@ -369,8 +370,11 @@ function subscribeRealtime() {
     )
     .on(
       "postgres_changes",
-      { event: "DELETE", schema: "public", table: "messages", filter: `class_id=eq.${currentClass.id}` },
-      (payload) => removeMessageRow(payload.old.id)
+      { event: "DELETE", schema: "public", table: "messages" },
+      (payload) => {
+        if (payload.old.class_id && payload.old.class_id !== currentClass.id) return;
+        removeMessageRow(payload.old.id);
+      }
     )
     .subscribe((status) => {
       console.log("[debug] realtime status:", status);
