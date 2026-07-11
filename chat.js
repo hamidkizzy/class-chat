@@ -341,14 +341,12 @@ function setStatus(state, label) {
 
 function subscribeRealtime() {
   setStatus("connecting", "connecting…");
-  console.log("[debug] subscribing to realtime for class", currentClass.id);
 
   sb.channel(`class-messages:${currentClass.id}`)
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "messages" },
       (payload) => {
-        console.log("[debug] INSERT event received:", payload);
         const msg = payload.new;
         if (msg.class_id !== currentClass.id) return;
         if (rowsById.has(msg.id)) return;
@@ -356,8 +354,8 @@ function subscribeRealtime() {
         const wasNearBottom = isNearBottom;
         renderMessage(msg);
 
-        if (msg.user_id !== session.user.id && document.hidden) {
-          playPing();
+        if (msg.user_id !== session.user.id) {
+          notifyNewMessage(msg);
         }
 
         if (wasNearBottom) {
@@ -378,7 +376,6 @@ function subscribeRealtime() {
       }
     )
     .subscribe((status) => {
-      console.log("[debug] realtime status:", status);
       if (status === "SUBSCRIBED") setStatus("connected", "live");
       else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setStatus("error", "connection issue");
       else if (status === "CLOSED") setStatus("connecting", "reconnecting…");
@@ -408,7 +405,6 @@ async function sendMessage() {
     return;
   }
 
-  console.log("[debug] message inserted successfully:", data);
 
   inputEl.value = "";
   autoResize();
@@ -503,7 +499,7 @@ function startPolling() {
       if (!rowsById.has(msg.id)) {
         renderMessage(msg);
         addedAny = true;
-        if (msg.user_id !== session.user.id && document.hidden) playPing();
+        if (msg.user_id !== session.user.id) notifyNewMessage(msg);
       }
     });
 
@@ -520,9 +516,11 @@ function startPolling() {
 }
 
 /* ============================================================
-   Notification sound
+   Notifications — sound (always) + system notification banner
+   (when the tab is in the background, if permission granted)
    ============================================================ */
 let audioCtx = null;
+let notifyPermissionRequested = false;
 
 function unlockAudio() {
   if (!audioCtx) {
@@ -530,6 +528,13 @@ function unlockAudio() {
     if (Ctx) audioCtx = new Ctx();
   } else if (audioCtx.state === "suspended") {
     audioCtx.resume();
+  }
+
+  if (!notifyPermissionRequested && "Notification" in window) {
+    notifyPermissionRequested = true;
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
   }
 }
 
@@ -549,4 +554,26 @@ function playPing() {
   osc.connect(gain).connect(audioCtx.destination);
   osc.start();
   osc.stop(audioCtx.currentTime + 0.32);
+}
+
+function showBanner(msg) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+
+  const tag = tagFor(msg.user_id);
+  const n = new Notification(`${tag.label} — ${currentClass.name}`, {
+    body: msg.content,
+    icon: "https://api.iconify.design/mdi/chat.svg?color=%236C5CE7",
+    tag: "class-chat-message",
+  });
+  n.onclick = () => {
+    window.focus();
+    n.close();
+  };
+}
+
+function notifyNewMessage(msg) {
+  if (msg.user_id === session.user.id) return;
+  playPing();
+  if (document.hidden) showBanner(msg);
 }
