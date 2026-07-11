@@ -225,6 +225,7 @@ function enterChat() {
   loadHistory().then(() => {
     subscribeRealtime();
     subscribePresence();
+    startPolling();
   });
 }
 
@@ -469,6 +470,53 @@ function subscribePresence() {
         await presenceChannel.track({ online_at: new Date().toISOString() });
       }
     });
+}
+
+/* ============================================================
+   Polling fallback — automatically checks for new/deleted
+   messages every few seconds. Works as a safety net in case
+   the live push (Realtime) doesn't deliver an event.
+   ============================================================ */
+const POLL_INTERVAL_MS = 4000;
+
+function startPolling() {
+  setInterval(async () => {
+    const { data, error } = await sb
+      .from("messages")
+      .select("*")
+      .eq("class_id", currentClass.id)
+      .order("created_at", { ascending: true })
+      .limit(200);
+
+    if (error || !data) return;
+
+    const currentIds = new Set(data.map((m) => m.id));
+
+    Array.from(rowsById.keys()).forEach((id) => {
+      if (!currentIds.has(id)) removeMessageRow(id);
+    });
+
+    const wasNearBottom = isNearBottom;
+    let addedAny = false;
+
+    data.forEach((msg) => {
+      if (!rowsById.has(msg.id)) {
+        renderMessage(msg);
+        addedAny = true;
+        if (msg.user_id !== session.user.id && document.hidden) playPing();
+      }
+    });
+
+    if (addedAny) {
+      if (wasNearBottom) {
+        scrollToBottom(true);
+      } else {
+        unseenCount += 1;
+        jumpBtn.textContent = `↓ ${unseenCount} new message${unseenCount > 1 ? "s" : ""}`;
+        jumpBtn.classList.remove("hidden");
+      }
+    }
+  }, POLL_INTERVAL_MS);
 }
 
 /* ============================================================
